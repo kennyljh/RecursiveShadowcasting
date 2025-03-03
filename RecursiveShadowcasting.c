@@ -1,151 +1,407 @@
 #include <stdio.h>
 #include <stdbool.h>
-#include <math.h>
+#include <limits.h>
 
-#define DUNGEON_HORIZONTAL 10
-#define DUNGEON_VERTICAL 10
-#define MAX_RADIUS 5
+#define DUNGEON_WIDTH 20
+#define DUNGEON_HEIGHT 19
+#define RADIUS 17
 
-bool lightMap[DUNGEON_VERTICAL][DUNGEON_HORIZONTAL] = {false};
-char dungeon[DUNGEON_VERTICAL][DUNGEON_HORIZONTAL] = {
-    "##########",
-    "#........#",
-    "#....@...#",
-    "#........#",
-    "#........#",
-    "##########"
+char dungeon[DUNGEON_HEIGHT][DUNGEON_WIDTH] = {
+    "####################",
+    "#..................#",
+    "#.....#.....#......#",
+    "#...........#......#",
+    "#.....#.....#......#",
+    "#.....#............#",
+    "#.....#............#",
+    "#............#.....#",
+    "#..................#",
+    "#....#........####.#",
+    "#.............####.#",
+    "#..............###.#",
+    "#....#....#........#",
+    "#....#.............#",
+    "#..............#####",
+    "#..................#",
+    "#..............#...#",
+    "#..............#...#",
+    "####################"
 };
 
-void setVisible(int x, int y){
+// char dungeon[DUNGEON_HEIGHT][DUNGEON_WIDTH] = {
+//     "####################",
+//     "#..................#",
+//     "#..................#",
+//     "#..................#",
+//     "#..................#",
+//     "#..................#",
+//     "#..................#",
+//     "#..................#",
+//     "#..................#",
+//     "#..................#",
+//     "#..................#",
+//     "#..................#",
+//     "#..................#",
+//     "#..................#",
+//     "#..................#",
+//     "#..................#",
+//     "#..................#",
+//     "#..................#",
+//     "####################"
+// };
 
-    if (x >= 0 && x < DUNGEON_HORIZONTAL && y >= 0 && y < DUNGEON_VERTICAL){
-        lightMap[y][x] = true;
+bool lightMap[DUNGEON_HEIGHT][DUNGEON_WIDTH] = {false};
+
+typedef enum {
+    LeftToRight,
+    RightToLeft,
+    TopToBottom,
+    BottomToTop
+} IterateDirection;
+
+typedef enum {
+    RowUp,
+    RowDown,
+    ColLeft,
+    ColRight
+} FromDirection;
+
+void findFOV(int playerX, int playerY);
+
+void castLight(float startSlope, float endSlope, int startX, int startY, 
+    IterateDirection itrDir, FromDirection fromDir,
+    int radius, int currentRowCol);
+
+bool isBlocked(int x, int y);
+
+void becomeVisible(int x, int y);
+
+float calculateNonNegativeSlope(int x1, int y1, int x2, int y2);
+
+float altCalculateNonNegativeSlope(int x1, int y1, int x2, int y2);
+
+void printDungeon();
+
+void printVisionMap(int playerX, int playerY);
+
+int main(int argc, char *argv[]) {
+    
+    int playerX = 10, playerY = 2;
+    printDungeon();
+    findFOV(playerX, playerY);
+    printVisionMap(playerX, playerY);
+    return 0;
+}
+
+void findFOV(int playerX, int playerY) {
+
+    // Row-wise (Left to Right)
+    castLight(1.0, 0.0, playerX, playerY, LeftToRight, RowUp, RADIUS, 0);  // Octant 1
+    castLight(1.0, 0.0, playerX, playerY, LeftToRight, RowDown, RADIUS, 0); // Octant 6
+
+    // Row-wise (Right to Left)
+    castLight(1.0, 0.0, playerX, playerY, RightToLeft, RowUp, RADIUS, 0);  // Octant 2
+    castLight(1.0, 0.0, playerX, playerY, RightToLeft, RowDown, RADIUS, 0); // Octant 5
+
+    // // Column-wise (Top to Bottom)
+    castLight(1.0, 0.0, playerX, playerY, TopToBottom, ColRight, RADIUS, 0); // Octant 3
+    castLight(1.0, 0.0, playerX, playerY, TopToBottom, ColLeft, RADIUS, 0); // Octant 8
+
+    // // Column-wise (Bottom to Top)
+    castLight(1.0, 0.0, playerX, playerY, BottomToTop, ColRight, RADIUS, 0); // Octant 4
+    castLight(1.0, 0.0, playerX, playerY, BottomToTop, ColLeft, RADIUS, 0); // Octant 7
+}
+
+/*
+             Shared
+             edge by
+  Shared     1 & 2      Shared
+  edge by\      |      /edge by
+  1 & 8   \     |     / 2 & 3
+           \1111|2222/
+           8\111|222/3
+           88\11|22/33
+           888\1|2/333
+  Shared   8888\|/3333  Shared
+  edge by-------@-------edge by
+  7 & 8    7777/|\4444  3 & 4
+           777/6|5\444
+           77/66|55\44
+           7/666|555\4
+           /6666|5555\
+  Shared  /     |     \ Shared
+  edge by/      |      \edge by
+  6 & 7      Shared     4 & 5
+             edge by 
+             5 & 6
+    Rough implementation of recursive shadowcasting based of this explanation 
+    by Björn Bergström
+    https://www.roguebasin.com/index.php/FOV_using_recursive_shadowcasting
+*/
+void castLight(float startSlope, float endSlope, int playerX, int playerY, 
+                IterateDirection itrDir, FromDirection fromDir,
+                int radius, int currentDistance){
+    
+    if (currentDistance > radius) return;
+
+    // iterate by row or col
+    int changeInX, changeInY;
+    int startX, startY, endX, endY;
+
+    // octant 1
+    if (itrDir == LeftToRight && fromDir == RowUp){
+
+        changeInX = 1;
+        changeInY = 0;
+        startX = playerX + (startSlope * -currentDistance);
+        startY = playerY - currentDistance;
+        endX = playerX + (endSlope * -currentDistance);
+        endY = playerY - currentDistance;
     }
+    // octant 6
+    else if (itrDir == LeftToRight && fromDir == RowDown){
+
+        changeInX = 1;
+        changeInY = 0;
+        startX = playerX + (startSlope * -currentDistance);
+        startY = playerY + currentDistance;
+        endX = playerX + (endSlope * -currentDistance);
+        endY = playerY + currentDistance;
+    }
+    // octant 2
+    else if (itrDir == RightToLeft && fromDir == RowUp){
+
+        changeInX = -1;
+        changeInY = 0;
+        startX = playerX + (startSlope * +currentDistance);
+        startY = playerY - currentDistance;
+        endX = playerX + (endSlope * +currentDistance);
+        endY = playerY - currentDistance;
+    }
+    // octant 5
+    else if (itrDir == RightToLeft && fromDir == RowDown){
+
+        changeInX = -1;
+        changeInY = 0;
+        startX = playerX + (startSlope * +currentDistance);
+        startY = playerY + currentDistance;
+        endX = playerX + (endSlope * +currentDistance);
+        endY = playerY + currentDistance;
+    }
+    // octant 3
+    else if (itrDir == TopToBottom && fromDir == ColRight){
+
+        changeInX = 0;
+        changeInY = 1;
+        startX = playerX + currentDistance;
+        startY = playerY - (startSlope * +currentDistance);
+        endX = playerX + currentDistance;
+        endY = playerY - (endSlope * +currentDistance);
+    }
+    // octant 8
+    else if (itrDir == TopToBottom && fromDir == ColLeft){
+
+        changeInX = 0;
+        changeInY = 1;
+        startX = playerX - currentDistance;
+        startY = playerY - (startSlope * +currentDistance);
+        endX = playerX - currentDistance;
+        endY = playerY - (endSlope * +currentDistance);
+    }
+    // octant 4
+    else if (itrDir == BottomToTop && fromDir == ColRight){
+
+        changeInX = 0;
+        changeInY = -1;
+        startX = playerX + currentDistance;
+        startY = playerY + (startSlope * +currentDistance);
+        endX = playerX + currentDistance;
+        endY = playerY + (endSlope * +currentDistance);
+    }
+    // octant 7
+    else if (itrDir == BottomToTop && fromDir == ColLeft){
+
+        changeInX = 0;
+        changeInY = -1;
+        startX = playerX - currentDistance;
+        startY = playerY + (startSlope * +currentDistance);
+        endX = playerX - currentDistance;
+        endY = playerY + (endSlope * +currentDistance);
+    }
+
+    // odd scenarios where the starting X or Y coordinates exceeds that of ending 
+    // coordinates due to close slope values
+    if (itrDir == LeftToRight){
+
+        if (startX > endX) return;
+    }
+    else if (itrDir == RightToLeft){
+
+        if (endX > startX) return;
+    }
+    else if (itrDir == TopToBottom){
+
+        if (startY > endY) return;
+    }
+    else if (itrDir == BottomToTop){
+
+        if (endY > startY) return;
+    }
+
+    bool rowColBlockedInstance = false;
+    float newStartSlope = startSlope;
+
+    // iterate by row or col
+    int tempX = startX; 
+    int tempY = startY;
+    int previousX = INT_MAX;
+    int previousY = INT_MAX;
+    bool reachedEnd = false;
+    do {
+        if (tempX == endX && tempY == endY) reachedEnd = true;
+        // non blocking cell
+        if (!isBlocked(tempX, tempY)) {
+
+            becomeVisible(tempX, tempY);
+
+            // first non blocking after series of blocking cells
+            if (rowColBlockedInstance) {
+
+                rowColBlockedInstance = false;
+
+                if ((itrDir == TopToBottom && fromDir == ColRight) ||
+                    (itrDir == TopToBottom && fromDir == ColLeft) ||
+                    (itrDir == BottomToTop && fromDir == ColRight) ||
+                    (itrDir == BottomToTop && fromDir == ColLeft)){
+
+                        newStartSlope = altCalculateNonNegativeSlope(tempX, tempY, playerX, playerY);
+                }
+                else {
+                    newStartSlope = calculateNonNegativeSlope(tempX, tempY, playerX, playerY);
+                }                
+            }
+        }
+        // blocking cell
+        else {
+
+            if (rowColBlockedInstance) {
+
+                previousX = tempX;
+                previousY = tempY;
+                tempX += changeInX;
+                tempY += changeInY;
+                continue;
+            }
+
+            rowColBlockedInstance = true;
+            // start on a new iteration with starting blocking cell
+            if (previousX == INT_MAX || previousY == INT_MAX){
+
+                if ((itrDir == TopToBottom && fromDir == ColRight) ||
+                    (itrDir == TopToBottom && fromDir == ColLeft) ||
+                    (itrDir == BottomToTop && fromDir == ColRight) ||
+                    (itrDir == BottomToTop && fromDir == ColLeft)){
+                        newStartSlope = altCalculateNonNegativeSlope(tempX, tempY, playerX, playerY);
+                }
+                else {
+                    newStartSlope = calculateNonNegativeSlope(tempX, tempY, playerX, playerY);
+                }  
+            }
+            else {
+                float newEndSlope;
+                // octant 1, 6, 2, 5
+                if ((itrDir == LeftToRight && fromDir == RowUp) ||
+                    (itrDir == LeftToRight && fromDir == RowDown) ||
+                    (itrDir == RightToLeft && fromDir == RowUp) ||
+                    (itrDir == RightToLeft && fromDir == RowDown)){
+
+                        newEndSlope = calculateNonNegativeSlope(previousX, previousY, playerX, playerY);
+                }
+                // octant 3, 8, 4, 7
+                else if ((itrDir == TopToBottom && fromDir == ColRight) ||
+                            (itrDir == TopToBottom && fromDir == ColLeft) ||
+                            (itrDir == BottomToTop && fromDir == ColRight) ||
+                            (itrDir == BottomToTop && fromDir == ColLeft)){
+
+                                newEndSlope = altCalculateNonNegativeSlope(previousX, previousY, playerX, playerY);
+                }
+                else {
+                    newEndSlope = calculateNonNegativeSlope(previousX, previousY, playerX, playerY);
+                }
+                castLight(newStartSlope, newEndSlope, playerX, playerY, itrDir, fromDir, radius, currentDistance + 1);
+            }
+        }
+        previousX = tempX;
+        previousY = tempY;
+        tempX += changeInX;
+        tempY += changeInY;
+    } while (!reachedEnd);
+
+    if (!rowColBlockedInstance) castLight(newStartSlope, endSlope, playerX, playerY, itrDir, fromDir, radius, currentDistance + 1);
 }
 
 bool isBlocked(int x, int y){
 
-    if (x < 0 || x >= DUNGEON_HORIZONTAL || y < 0 || y >= DUNGEON_VERTICAL){
-        return true;
-    }
     return dungeon[y][x] == '#';
 }
 
-void castLight(int row, float startSlope, float endSlope, int startX, int startY, int radius, int octant){
+void becomeVisible(int x, int y){
 
-    if (startSlope < endSlope) return;
+    lightMap[y][x] = true;
+}
 
-    float nextStartSlope = startSlope;
-    for (int i = row; i <= radius; i++){
+float calculateNonNegativeSlope(int x1, int y1, int x2, int y2){
 
-        bool blocked = false;
-
-        for (int dx = -i; dx <= 0; dx++){
-
-            int xx = startX, yy = startY;
-
-            switch (octant) {
-                case 0:
-                    xx += dx;
-                    yy -= i;
-                    break;
-                case 1:
-                    xx += i;
-                    yy += dx;
-                    break;
-                case 2:
-                    xx += i;
-                    yy -= dx;
-                    break;
-                case 3:
-                    xx -= dx;
-                    yy += i;
-                    break;
-                case 4:
-                    xx -= dx;
-                    yy -= i;
-                    break;
-                case 5:
-                    xx -= i;
-                    yy -= dx;
-                    break;
-                case 6:
-                    xx -= i;
-                    yy += dx;
-                    break;
-                case 7:
-                    xx += dx;
-                    yy += i;
-                    break;
-            }
-
-            float leftSlope = (dx - 0.5) / i;
-            float rightSlope = (dx + 0.5) / i;
-
-            if (leftSlope > startSlope) continue;
-            if (rightSlope < endSlope) break;
-
-            setVisible(xx, yy);
-
-            if (blocked){
-
-                if (isBlocked(xx, yy)){
-
-                    nextStartSlope = rightSlope;
-                }
-                else {
-
-                    blocked = false;
-                    startSlope = nextStartSlope;
-                }
-            }
-            else {
-
-                if (isBlocked(xx, yy) && i < radius){
-
-                    blocked = true;
-                    castLight(i + 1, startSlope, leftSlope, startX, startY, radius, octant);
-                    nextStartSlope = rightSlope;
-                }
-            }
-        }
-        if (blocked) break;
+    if (((y2 - y1) == 0) || ((x2 - x1) == 0)){
+        return 0.0f;
     }
+    float result = (float)(x1 - x2) / (float)(y1 - y2);
+    return (result > 0) ? result : -result;
 }
 
-// Initialize FOV
-void calculateFOV(int startX, int startY, int radius) {
-    // Reset light map
-    for (int y = 0; y < DUNGEON_VERTICAL; y++)
-        for (int x = 0; x < DUNGEON_HORIZONTAL; x++)
-            lightMap[y][x] = false;
+float altCalculateNonNegativeSlope(int x1, int y1, int x2, int y2){
 
-    setVisible(startX, startY); // Player is always visible
-
-    // Cast light for all 8 octants
-    for (int octant = 0; octant < 8; octant++)
-        castLight(1, 1.0, 0.0, startX, startY, radius, octant);
+    if (((y2 - y1) == 0) || ((x2 - x1) == 0)){
+        return 0.0f;
+    }
+    float result = (float)(y1 - y2) / (float)(x1 - x2);
+    return (result > 0) ? result : -result;
 }
 
-// Print dungeon with FOV
-void printDungeon() {
-    for (int y = 0; y < DUNGEON_VERTICAL; y++) {
-        for (int x = 0; x < DUNGEON_HORIZONTAL; x++) {
-            if (x == 4 && y == 2) {
-                printf("@"); // Player
-            } else if (lightMap[y][x]) {
-                printf("."); // Visible
-            } else {
-                printf(" ");
-            }
+void printDungeon(){
+
+    printf("Original Dungeon:\n");
+
+    for (int y = 0; y < DUNGEON_HEIGHT; y++){
+
+        for (int x = 0; x < DUNGEON_WIDTH; x++){
+
+            printf("%c", dungeon[y][x]);
         }
         printf("\n");
     }
 }
 
-int main() {
-    int playerX = 4, playerY = 2;
-    calculateFOV(playerX, playerY, MAX_RADIUS);
-    printDungeon();
-    return 0;
+void printVisionMap(int playerX, int playerY){
+
+    printf("\nVision Map:\n");
+    for (int y = 0; y < DUNGEON_HEIGHT; y++){
+
+        for (int x = 0; x < DUNGEON_WIDTH; x++){
+
+            if (x == playerX && y == playerY){
+
+                printf("@");
+            }
+            else if (lightMap[y][x]){
+
+                printf(".");
+            }
+            else{
+
+                printf("#");
+            }
+        }
+        printf("\n");
+    }
 }
