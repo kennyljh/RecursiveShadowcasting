@@ -51,27 +51,27 @@
 //     "####################"
 // };
 
-char dungeon[DUNGEON_HEIGHT][DUNGEON_WIDTH] = {
-    "####################",
-    "#..................#",
-    "#.......###........#",
-    "#.......###........#",
-    "###..#..###........#",
-    "#........##........#",
-    "#..................#",
-    "#.......#..........#",
-    "#..................#",
-    "#..#...........#...#",
-    "#...#..........#...#",
-    "#....#.........#...#",
-    "#....#.............#",
-    "#..................#",
-    "#..###.............#",
-    "#..................#",
-    "#..................#",
-    "#..................#",
-    "####################"
-};
+// char dungeon[DUNGEON_HEIGHT][DUNGEON_WIDTH] = {
+//     "####################",
+//     "#..................#",
+//     "#.......###........#",
+//     "#.......###........#",
+//     "###..#..###........#",
+//     "#........##........#",
+//     "#..................#",
+//     "#.......#..........#",
+//     "#..................#",
+//     "#..#...........#...#",
+//     "#...#..........#...#",
+//     "#....#.........#...#",
+//     "#....#.............#",
+//     "#..................#",
+//     "#..###.............#",
+//     "#..................#",
+//     "#..................#",
+//     "#..................#",
+//     "####################"
+// };
 
 // char dungeon[DUNGEON_HEIGHT][DUNGEON_WIDTH] = {
 //     "####################",
@@ -96,27 +96,27 @@ char dungeon[DUNGEON_HEIGHT][DUNGEON_WIDTH] = {
 // };
 
 
-// char dungeon[DUNGEON_HEIGHT][DUNGEON_WIDTH] = {
-//     "####################",
-//     "#..................#",
-//     "#.....#.....#......#",
-//     "#...........#......#",
-//     "#.....#.....#......#",
-//     "#.....#............#",
-//     "#.....#............#",
-//     "#.........#........#",
-//     "#.........#........#",
-//     "#.........#...####.#",
-//     "#.........#...####.#",
-//     "#.........#....###.#",
-//     "#.........#........#",
-//     "#..................#",
-//     "#..............#####",
-//     "#..................#",
-//     "#..............#...#",
-//     "#..............#...#",
-//     "####################"
-// };
+char dungeon[DUNGEON_HEIGHT][DUNGEON_WIDTH] = {
+    "####################",
+    "#..................#",
+    "#.....#.....#......#",
+    "#...........#......#",
+    "#.....#.....#......#",
+    "#.....#............#",
+    "#.....#............#",
+    "#............#.....#",
+    "#..................#",
+    "#....#........####.#",
+    "#.............####.#",
+    "#..............###.#",
+    "#....#....#........#",
+    "#....#.............#",
+    "#..............#####",
+    "#..................#",
+    "#..............#...#",
+    "#..............#...#",
+    "####################"
+};
 
 // char dungeon[DUNGEON_HEIGHT][DUNGEON_WIDTH] = {
 //     "####################",
@@ -205,19 +205,19 @@ void findFOV(int playerX, int playerY) {
 
     // Row-wise (Left to Right)
     castLight(1.0, 0.0, playerX, playerY, LeftToRight, RowUp, RADIUS, 0);  // Octant 1
-    //castLight(1.0, 0.0, playerX, playerY, LeftToRight, RowDown, RADIUS, 0); // Octant 6
+    castLight(1.0, 0.0, playerX, playerY, LeftToRight, RowDown, RADIUS, 0); // Octant 6
 
     // Row-wise (Right to Left)
-    //castLight(1.0, 0.0, playerX, playerY, RightToLeft, RowUp, RADIUS, 0);  // Octant 2
-    //castLight(1.0, 0.0, playerX, playerY, RightToLeft, RowDown, RADIUS, 0); // Octant 5
+    castLight(1.0, 0.0, playerX, playerY, RightToLeft, RowUp, RADIUS, 0);  // Octant 2
+    castLight(1.0, 0.0, playerX, playerY, RightToLeft, RowDown, RADIUS, 0); // Octant 5
 
     // // Column-wise (Top to Bottom)
-    //castLight(1.0, 0.0, playerX, playerY, TopToBottom, ColRight, RADIUS, 0); // Octant 3
-    //castLight(1.0, 0.0, playerX, playerY, TopToBottom, ColLeft, RADIUS, 0); // Octant 8
+    castLight(1.0, 0.0, playerX, playerY, TopToBottom, ColRight, RADIUS, 0); // Octant 3
+    castLight(1.0, 0.0, playerX, playerY, TopToBottom, ColLeft, RADIUS, 0); // Octant 8
 
     // // Column-wise (Bottom to Top)
-    //castLight(1.0, 0.0, playerX, playerY, BottomToTop, ColRight, RADIUS, 0); // Octant 4
-    //castLight(1.0, 0.0, playerX, playerY, BottomToTop, ColLeft, RADIUS, 0); // Octant 7
+    castLight(1.0, 0.0, playerX, playerY, BottomToTop, ColRight, RADIUS, 0); // Octant 4
+    castLight(1.0, 0.0, playerX, playerY, BottomToTop, ColLeft, RADIUS, 0); // Octant 7
 }
 
 /*
@@ -336,11 +336,22 @@ void castLight(float startSlope, float endSlope, int playerX, int playerY,
         endY = playerY + (endSlope * +currentDistance);
     }
 
+    // odd scenarios where the starting X or Y coordinates exceeds that of ending coordinates
     if (itrDir == LeftToRight){
 
-        if (startX > endX){
-            return;
-        }
+        if (startX > endX) return;
+    }
+    else if (itrDir == RightToLeft){
+
+        if (endX > startX) return;
+    }
+    else if (itrDir == TopToBottom){
+
+        if (startY > endY) return;
+    }
+    else if (itrDir == BottomToTop){
+
+        if (endY > startY) return;
     }
 
     bool rowColBlockedInstance = false;
@@ -390,7 +401,7 @@ void castLight(float startSlope, float endSlope, int playerX, int playerY,
                 previousY = tempY;
                 tempX += changeInX;
                 tempY += changeInY;
-                printVisionMap(0, 0);
+                //printVisionMap(0, 0);
                 continue;
             }
 
@@ -424,15 +435,15 @@ void castLight(float startSlope, float endSlope, int playerX, int playerY,
                 }
                 // octant 6
                 else if (itrDir == LeftToRight && fromDir == RowDown){
-                    newEndSlope = calculateNonNegativeSlope(previousX, previousY - 1, playerX, playerY);
+                    newEndSlope = calculateNonNegativeSlope(previousX, previousY, playerX, playerY);
                 }
                 // octant 2
                 else if (itrDir == RightToLeft && fromDir == RowUp){
-                    newEndSlope = calculateNonNegativeSlope(previousX + 1, previousY - 1, playerX, playerY);
+                    newEndSlope = calculateNonNegativeSlope(previousX , previousY, playerX, playerY);
                 }
                 // octant 5
                 else if (itrDir == RightToLeft && fromDir == RowDown){
-                    newEndSlope = calculateNonNegativeSlope(previousX, previousY - 1, playerX, playerY);
+                    newEndSlope = calculateNonNegativeSlope(previousX, previousY, playerX, playerY);
                 }
                 // octant 3
                 else if (itrDir == TopToBottom && fromDir == ColRight){
@@ -457,7 +468,7 @@ void castLight(float startSlope, float endSlope, int playerX, int playerY,
         previousY = tempY;
         tempX += changeInX;
         tempY += changeInY;
-        printVisionMap(0, 0);
+        //printVisionMap(0, 0);
     } while (!reachedEnd);
 
     if (!rowColBlockedInstance) castLight(newStartSlope, endSlope, playerX, playerY, itrDir, fromDir, radius, currentDistance + 1);
