@@ -28,30 +28,53 @@
 //     "####################"
 // };
 
+// char dungeon[DUNGEON_HEIGHT][DUNGEON_WIDTH] = {
+//     "####################",
+//     "#..................#",
+//     "#..................#",
+//     "#..................#",
+//     "#..................#",
+//     "#..................#",
+//     "#..................#",
+//     "#..................#",
+//     "#..................#",
+//     "#..................#",
+//     "#..................#",
+//     "#..................#",
+//     "#..................#",
+//     "#........##........#",
+//     "#........###..#..###",
+//     "#........###.......#",
+//     "#........###.......#",
+//     "#..................#",
+//     "####################"
+// };
+
 char dungeon[DUNGEON_HEIGHT][DUNGEON_WIDTH] = {
     "####################",
     "#..................#",
-    "#..................#",
-    "#..................#",
-    "#..................#",
-    "#..................#",
-    "#..................#",
-    "#..................#",
-    "#..................#",
-    "#..................#",
-    "#..................#",
-    "#..................#",
-    "#..................#",
+    "#.......###........#",
+    "#.......###........#",
+    "###..#..###........#",
     "#........##........#",
-    "#........###..#..###",
-    "#........###.......#",
-    "#........###.......#",
+    "#..................#",
+    "#..................#",
+    "#..................#",
+    "#..................#",
+    "#..................#",
+    "#..................#",
+    "#..................#",
+    "#..................#",
+    "#..................#",
+    "#..................#",
+    "#..................#",
     "#..................#",
     "####################"
 };
 
 // char dungeon[DUNGEON_HEIGHT][DUNGEON_WIDTH] = {
 //     "####################",
+//     "#..................#",
 //     "#..................#",
 //     "#..................#",
 //     "#..................#",
@@ -108,7 +131,9 @@ int main(int argc, char *argv[]) {
     // octant 1
     // int playerX = 18, playerY = 17;
     // octant 6
-    int playerX = 14, playerY = 1;
+    //int playerX = 18, playerY = 1;
+    // octant 2
+    int playerX = 1, playerY = 17;
     printDungeon();
     findFOV(playerX, playerY);
     printVisionMap(playerX, playerY);
@@ -119,11 +144,11 @@ int main(int argc, char *argv[]) {
 void findFOV(int playerX, int playerY) {
 
     // Row-wise (Left to Right)
-    castLight(1.0, 0.0, playerX, playerY, LeftToRight, RowUp, RADIUS, 0);  // Octant 1
-    castLight(1.0, 0.0, playerX, playerY, LeftToRight, RowDown, RADIUS, 0); // Octant 6
+    //castLight(1.0, 0.0, playerX, playerY, LeftToRight, RowUp, RADIUS, 0);  // Octant 1
+    //castLight(1.0, 0.0, playerX, playerY, LeftToRight, RowDown, RADIUS, 0); // Octant 6
 
     // // Row-wise (Right to Left)
-    // castLight(1.0, 0.0, playerX, playerY, RightToLeft, RowUp, RADIUS, 1);  // Octant 2
+    castLight(1.0, 0.0, playerX, playerY, RightToLeft, RowUp, RADIUS, 0);  // Octant 2
     // castLight(1.0, 0.0, playerX, playerY, RightToLeft, RowDown, RADIUS, 1); // Octant 5
 
     // // Column-wise (Top to Bottom)
@@ -176,9 +201,9 @@ void castLight(float startSlope, float endSlope, int playerX, int playerY,
         changeInX = 1;
         changeInY = 0;
         startX = playerX + (startSlope * -currentDistance);
-        startY = playerY + (-currentDistance);
+        startY = playerY - currentDistance;
         endX = playerX + (endSlope * -currentDistance);
-        endY = playerY + (-currentDistance);
+        endY = playerY - currentDistance;
     }
     // octant 6
     else if (itrDir == LeftToRight && fromDir == RowDown){
@@ -189,6 +214,25 @@ void castLight(float startSlope, float endSlope, int playerX, int playerY,
         startY = playerY + currentDistance;
         endX = playerX + (endSlope * -currentDistance);
         endY = playerY + currentDistance;
+    }
+    // octant 2
+    else if (itrDir == RightToLeft && fromDir == RowUp){
+
+        changeInX = -1;
+        changeInY = 0;
+        startX = playerX + (startSlope * +currentDistance);
+        startY = playerY - currentDistance;
+        endX = playerX + (endSlope * +currentDistance);
+        endY = playerY - currentDistance;
+    }
+    else if (itrDir == RightToLeft && fromDir == RowDown){
+
+        changeInX = -1;
+        changeInY = 0;
+        startX = playerX + (startSlope * +currentDistance);
+        startY = playerY - currentDistance;
+        endX = playerX + (endSlope * +currentDistance);
+        endY = playerY - currentDistance;
     }
 
     bool rowColBlockedInstance = false;
@@ -223,7 +267,7 @@ void castLight(float startSlope, float endSlope, int playerX, int playerY,
                 previousY = tempY;
                 tempX += changeInX;
                 tempY += changeInY;
-                //printVisionMap(18, 16);
+                //printVisionMap(0, 0);
                 continue;
             }
 
@@ -243,6 +287,11 @@ void castLight(float startSlope, float endSlope, int playerX, int playerY,
                 else if (itrDir == LeftToRight && fromDir == RowDown){
                     newEndSlope = calculateNonNegativeSlope(previousX, previousY - 1, playerX, playerY);
                 }
+                // octant 2
+                else if (itrDir == RightToLeft && fromDir == RowUp){
+
+
+                }
                 else {
                     newEndSlope = calculateNonNegativeSlope(previousX, previousY, playerX, playerY);
                 }
@@ -253,7 +302,7 @@ void castLight(float startSlope, float endSlope, int playerX, int playerY,
         previousY = tempY;
         tempX += changeInX;
         tempY += changeInY;
-        //printVisionMap(18, 16);
+        //printVisionMap(0, 0);
     } while (!reachedEnd);
 
     if (!rowColBlockedInstance) castLight(newStartSlope, endSlope, playerX, playerY, itrDir, fromDir, radius, currentDistance + 1);
