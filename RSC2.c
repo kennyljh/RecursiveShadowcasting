@@ -129,7 +129,7 @@ void printVisionMap(int playerX, int playerY);
 int main(int argc, char *argv[]) {
     
     // octant 1
-    // int playerX = 18, playerY = 17;
+    //int playerX = 18, playerY = 17;
     // octant 6
     //int playerX = 18, playerY = 1;
     // octant 2
@@ -289,8 +289,7 @@ void castLight(float startSlope, float endSlope, int playerX, int playerY,
                 }
                 // octant 2
                 else if (itrDir == RightToLeft && fromDir == RowUp){
-
-
+                    newEndSlope = calculateNonNegativeSlope(previousX + 1, previousY - 1, playerX, playerY);
                 }
                 else {
                     newEndSlope = calculateNonNegativeSlope(previousX, previousY, playerX, playerY);
