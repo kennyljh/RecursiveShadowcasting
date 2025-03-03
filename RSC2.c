@@ -50,24 +50,46 @@
 //     "####################"
 // };
 
+// char dungeon[DUNGEON_HEIGHT][DUNGEON_WIDTH] = {
+//     "####################",
+//     "#..................#",
+//     "#.......###........#",
+//     "#.......###........#",
+//     "###..#..###........#",
+//     "#........##........#",
+//     "#..................#",
+//     "#..................#",
+//     "#..................#",
+//     "#..................#",
+//     "#..................#",
+//     "#..................#",
+//     "#..................#",
+//     "#..................#",
+//     "#..................#",
+//     "#..................#",
+//     "#..................#",
+//     "#..................#",
+//     "####################"
+// };
+
 char dungeon[DUNGEON_HEIGHT][DUNGEON_WIDTH] = {
     "####################",
     "#..................#",
-    "#.......###........#",
-    "#.......###........#",
-    "###..#..###........#",
+    "#..................#",
+    "#..................#",
+    "#..................#",
+    "#..................#",
+    "#..................#",
+    "#..................#",
+    "#..................#",
+    "#..................#",
+    "#..................#",
+    "#..................#",
+    "#..................#",
     "#........##........#",
-    "#..................#",
-    "#..................#",
-    "#..................#",
-    "#..................#",
-    "#..................#",
-    "#..................#",
-    "#..................#",
-    "#..................#",
-    "#..................#",
-    "#..................#",
-    "#..................#",
+    "###..#..###........#",
+    "#.......###........#",
+    "#.......###........#",
     "#..................#",
     "####################"
 };
@@ -133,7 +155,9 @@ int main(int argc, char *argv[]) {
     // octant 6
     //int playerX = 18, playerY = 1;
     // octant 2
-    int playerX = 1, playerY = 17;
+    //int playerX = 1, playerY = 17;
+    // octant 5
+    int playerX = 1, playerY = 1;
     printDungeon();
     findFOV(playerX, playerY);
     printVisionMap(playerX, playerY);
@@ -148,8 +172,8 @@ void findFOV(int playerX, int playerY) {
     //castLight(1.0, 0.0, playerX, playerY, LeftToRight, RowDown, RADIUS, 0); // Octant 6
 
     // // Row-wise (Right to Left)
-    castLight(1.0, 0.0, playerX, playerY, RightToLeft, RowUp, RADIUS, 0);  // Octant 2
-    // castLight(1.0, 0.0, playerX, playerY, RightToLeft, RowDown, RADIUS, 1); // Octant 5
+    //castLight(1.0, 0.0, playerX, playerY, RightToLeft, RowUp, RADIUS, 0);  // Octant 2
+    castLight(1.0, 0.0, playerX, playerY, RightToLeft, RowDown, RADIUS, 0); // Octant 5
 
     // // Column-wise (Top to Bottom)
     // castLight(1.0, 0.0, playerX, playerY, TopToBottom, ColRight, RADIUS, 1); // Octant 3
@@ -225,14 +249,15 @@ void castLight(float startSlope, float endSlope, int playerX, int playerY,
         endX = playerX + (endSlope * +currentDistance);
         endY = playerY - currentDistance;
     }
+    // octant 5
     else if (itrDir == RightToLeft && fromDir == RowDown){
 
         changeInX = -1;
         changeInY = 0;
         startX = playerX + (startSlope * +currentDistance);
-        startY = playerY - currentDistance;
+        startY = playerY + currentDistance;
         endX = playerX + (endSlope * +currentDistance);
-        endY = playerY - currentDistance;
+        endY = playerY + currentDistance;
     }
 
     bool rowColBlockedInstance = false;
@@ -290,6 +315,10 @@ void castLight(float startSlope, float endSlope, int playerX, int playerY,
                 // octant 2
                 else if (itrDir == RightToLeft && fromDir == RowUp){
                     newEndSlope = calculateNonNegativeSlope(previousX + 1, previousY - 1, playerX, playerY);
+                }
+                //octant 5
+                else if (itrDir == RightToLeft && fromDir == RowDown){
+                    newEndSlope = calculateNonNegativeSlope(previousX, previousY - 1, playerX, playerY);
                 }
                 else {
                     newEndSlope = calculateNonNegativeSlope(previousX, previousY, playerX, playerY);
