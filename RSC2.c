@@ -6,24 +6,46 @@
 #define DUNGEON_HEIGHT 19
 #define RADIUS 16
 
+// char dungeon[DUNGEON_HEIGHT][DUNGEON_WIDTH] = {
+//     "####################",
+//     "#..................#",
+//     "#........###.......#",
+//     "#........###.......#",
+//     "#........###..#..###",
+//     "#........##........#",
+//     "#..................#",
+//     "#..................#",
+//     "#..................#",
+//     "#..................#",
+//     "#..................#",
+//     "#..................#",
+//     "#..................#",
+//     "#..................#",
+//     "#..................#",
+//     "#..................#",
+//     "#..................#",
+//     "#..................#",
+//     "####################"
+// };
+
 char dungeon[DUNGEON_HEIGHT][DUNGEON_WIDTH] = {
     "####################",
     "#..................#",
-    "#........###.......#",
-    "#........###.......#",
-    "#........###..#..###",
+    "#..................#",
+    "#..................#",
+    "#..................#",
+    "#..................#",
+    "#..................#",
+    "#..................#",
+    "#..................#",
+    "#..................#",
+    "#..................#",
+    "#..................#",
+    "#..................#",
     "#........##........#",
-    "#..................#",
-    "#..................#",
-    "#..................#",
-    "#..................#",
-    "#..................#",
-    "#..................#",
-    "#..................#",
-    "#..................#",
-    "#..................#",
-    "#..................#",
-    "#..................#",
+    "#........###..#..###",
+    "#........###.......#",
+    "#........###.......#",
     "#..................#",
     "####################"
 };
@@ -83,7 +105,10 @@ void printVisionMap(int playerX, int playerY);
 
 int main(int argc, char *argv[]) {
     
-    int playerX = 18, playerY = 17;
+    // octant 1
+    // int playerX = 18, playerY = 17;
+    // octant 6
+    int playerX = 14, playerY = 1;
     printDungeon();
     findFOV(playerX, playerY);
     printVisionMap(playerX, playerY);
@@ -95,7 +120,7 @@ void findFOV(int playerX, int playerY) {
 
     // Row-wise (Left to Right)
     castLight(1.0, 0.0, playerX, playerY, LeftToRight, RowUp, RADIUS, 0);  // Octant 1
-    // castLight(1.0, 0.0, playerX, playerY, LeftToRight, RowDown, RADIUS, 1); // Octant 6
+    castLight(1.0, 0.0, playerX, playerY, LeftToRight, RowDown, RADIUS, 0); // Octant 6
 
     // // Row-wise (Right to Left)
     // castLight(1.0, 0.0, playerX, playerY, RightToLeft, RowUp, RADIUS, 1);  // Octant 2
@@ -145,6 +170,7 @@ void castLight(float startSlope, float endSlope, int playerX, int playerY,
     int changeInX, changeInY;
     int startX, startY, endX, endY;
 
+    // octant 1
     if (itrDir == LeftToRight && fromDir == RowUp){
 
         changeInX = 1;
@@ -153,6 +179,16 @@ void castLight(float startSlope, float endSlope, int playerX, int playerY,
         startY = playerY + (-currentDistance);
         endX = playerX + (endSlope * -currentDistance);
         endY = playerY + (-currentDistance);
+    }
+    // octant 6
+    else if (itrDir == LeftToRight && fromDir == RowDown){
+
+        changeInX = 1;
+        changeInY = 0;
+        startX = playerX + (startSlope * -currentDistance);
+        startY = playerY + currentDistance;
+        endX = playerX + (endSlope * -currentDistance);
+        endY = playerY + currentDistance;
     }
 
     bool rowColBlockedInstance = false;
@@ -195,18 +231,17 @@ void castLight(float startSlope, float endSlope, int playerX, int playerY,
             // start on a new iteration with starting blocking cell
             if (previousX == INT_MAX || previousY == INT_MAX){
 
-                if (itrDir == LeftToRight && fromDir == RowUp){
-                    float newStartSlope = calculateNonNegativeSlope(startX, startY, playerX, playerY);
-                }
-                else {
-                    float newStartSlope = calculateNonNegativeSlope(startX, startY, playerX, playerY);
-                }
-                
+                float newStartSlope = calculateNonNegativeSlope(startX, startY, playerX, playerY);
             }
             else {
                 float newEndSlope;
+                // octant 1
                 if (itrDir == LeftToRight && fromDir == RowUp){
                     newEndSlope = calculateNonNegativeSlope(previousX - 1, previousY - 1, playerX, playerY);
+                }
+                // octant 6
+                else if (itrDir == LeftToRight && fromDir == RowDown){
+                    newEndSlope = calculateNonNegativeSlope(previousX, previousY - 1, playerX, playerY);
                 }
                 else {
                     newEndSlope = calculateNonNegativeSlope(previousX, previousY, playerX, playerY);
@@ -266,11 +301,11 @@ void printVisionMap(int playerX, int playerY){
 
         for (int x = 0; x < DUNGEON_WIDTH; x++){
 
-            // if (x == playerX && y == playerY){
+            if (x == playerX && y == playerY){
 
-            //     printf("@");
-            // }
-            if (lightMap[y][x]){
+                printf("@");
+            }
+            else if (lightMap[y][x]){
 
                 printf(".");
             }
