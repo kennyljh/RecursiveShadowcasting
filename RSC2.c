@@ -4,7 +4,8 @@
 
 #define DUNGEON_WIDTH 20
 #define DUNGEON_HEIGHT 19
-#define RADIUS 16
+// #define RADIUS 16
+#define RADIUS 17
 
 // char dungeon[DUNGEON_HEIGHT][DUNGEON_WIDTH] = {
 //     "####################",
@@ -72,6 +73,29 @@
 //     "####################"
 // };
 
+// char dungeon[DUNGEON_HEIGHT][DUNGEON_WIDTH] = {
+//     "####################",
+//     "#..................#",
+//     "#..................#",
+//     "#..................#",
+//     "#..................#",
+//     "#..................#",
+//     "#..................#",
+//     "#..................#",
+//     "#..................#",
+//     "#..................#",
+//     "#..................#",
+//     "#..................#",
+//     "#..................#",
+//     "#........##........#",
+//     "###..#..###........#",
+//     "#.......###........#",
+//     "#.......###........#",
+//     "#..................#",
+//     "####################"
+// };
+
+
 char dungeon[DUNGEON_HEIGHT][DUNGEON_WIDTH] = {
     "####################",
     "#..................#",
@@ -82,15 +106,15 @@ char dungeon[DUNGEON_HEIGHT][DUNGEON_WIDTH] = {
     "#..................#",
     "#..................#",
     "#..................#",
+    "#.............####.#",
+    "#.............####.#",
+    "#..............###.#",
     "#..................#",
     "#..................#",
+    "#..............#...#",
     "#..................#",
-    "#..................#",
-    "#........##........#",
-    "###..#..###........#",
-    "#.......###........#",
-    "#.......###........#",
-    "#..................#",
+    "#..............#...#",
+    "#..............#...#",
     "####################"
 };
 
@@ -144,6 +168,8 @@ void becomeVisible(int x, int y);
 
 float calculateNonNegativeSlope(int x1, int y1, int x2, int y2);
 
+float altCalculateNonNegativeSlope(int x1, int y1, int x2, int y2);
+
 void printDungeon();
 
 void printVisionMap(int playerX, int playerY);
@@ -157,7 +183,9 @@ int main(int argc, char *argv[]) {
     // octant 2
     //int playerX = 1, playerY = 17;
     // octant 5
-    int playerX = 1, playerY = 1;
+    //int playerX = 1, playerY = 1;
+    // octant 3
+    int playerX = 1, playerY = 17;
     printDungeon();
     findFOV(playerX, playerY);
     printVisionMap(playerX, playerY);
@@ -173,10 +201,10 @@ void findFOV(int playerX, int playerY) {
 
     // // Row-wise (Right to Left)
     //castLight(1.0, 0.0, playerX, playerY, RightToLeft, RowUp, RADIUS, 0);  // Octant 2
-    castLight(1.0, 0.0, playerX, playerY, RightToLeft, RowDown, RADIUS, 0); // Octant 5
+    //castLight(1.0, 0.0, playerX, playerY, RightToLeft, RowDown, RADIUS, 0); // Octant 5
 
     // // Column-wise (Top to Bottom)
-    // castLight(1.0, 0.0, playerX, playerY, TopToBottom, ColRight, RADIUS, 1); // Octant 3
+    castLight(1.0, 0.0, playerX, playerY, TopToBottom, ColRight, RADIUS, 0); // Octant 3
     // castLight(1.0, 0.0, playerX, playerY, TopToBottom, ColLeft, RADIUS, 1); // Octant 8
 
     // // Column-wise (Bottom to Top)
@@ -259,6 +287,16 @@ void castLight(float startSlope, float endSlope, int playerX, int playerY,
         endX = playerX + (endSlope * +currentDistance);
         endY = playerY + currentDistance;
     }
+    // octant 3
+    else if (itrDir == TopToBottom && fromDir == ColRight){
+
+        changeInX = 0;
+        changeInY = 1;
+        startX = playerX + currentDistance;
+        startY = playerY - (startSlope * +currentDistance);
+        endX = playerX + currentDistance;
+        endY = playerY - (endSlope * +currentDistance);
+    }
 
     bool rowColBlockedInstance = false;
     float newStartSlope = startSlope;
@@ -280,7 +318,13 @@ void castLight(float startSlope, float endSlope, int playerX, int playerY,
             if (rowColBlockedInstance) {
 
                 rowColBlockedInstance = false;
-                newStartSlope = calculateNonNegativeSlope(tempX, tempY, playerX, playerY);
+
+                if (itrDir == TopToBottom && fromDir == ColRight){
+                    newStartSlope = altCalculateNonNegativeSlope(tempX, tempY, playerX, playerY);
+                }
+                else {
+                    newStartSlope = calculateNonNegativeSlope(tempX, tempY, playerX, playerY);
+                }                
             }
         }
         // blocking cell
@@ -300,8 +344,15 @@ void castLight(float startSlope, float endSlope, int playerX, int playerY,
             // start on a new iteration with starting blocking cell
             if (previousX == INT_MAX || previousY == INT_MAX){
 
-                float newStartSlope = calculateNonNegativeSlope(startX, startY, playerX, playerY);
+                if (itrDir == TopToBottom && fromDir == ColRight){
+                    newStartSlope = altCalculateNonNegativeSlope(tempX, tempY, playerX, playerY);
+                }
+                else {
+                    newStartSlope = calculateNonNegativeSlope(tempX, tempY, playerX, playerY);
+                }  
             }
+            // due to perhaps a not so precise calculation/interpretation of slopes as explained in the webpage,
+            // values here can be adjusted to prevent undesired vision maps (e.g. see through wall gaps)
             else {
                 float newEndSlope;
                 // octant 1
@@ -316,9 +367,13 @@ void castLight(float startSlope, float endSlope, int playerX, int playerY,
                 else if (itrDir == RightToLeft && fromDir == RowUp){
                     newEndSlope = calculateNonNegativeSlope(previousX + 1, previousY - 1, playerX, playerY);
                 }
-                //octant 5
+                // octant 5
                 else if (itrDir == RightToLeft && fromDir == RowDown){
                     newEndSlope = calculateNonNegativeSlope(previousX, previousY - 1, playerX, playerY);
+                }
+                // octant 3
+                else if (itrDir == TopToBottom && fromDir == ColRight){
+                    newEndSlope = altCalculateNonNegativeSlope(previousX + 1, previousY, playerX, playerY);
                 }
                 else {
                     newEndSlope = calculateNonNegativeSlope(previousX, previousY, playerX, playerY);
@@ -353,6 +408,17 @@ float calculateNonNegativeSlope(int x1, int y1, int x2, int y2){
     }
 
     float result = (float)(x1 - x2) / (float)(y1 - y2);
+    //printf("%.2f\n", result);
+    return (result > 0) ? result : -result;
+}
+
+float altCalculateNonNegativeSlope(int x1, int y1, int x2, int y2){
+
+    if (((y2 - y1) == 0) || ((x2 - x1) == 0)){
+        return 0.0f;
+    }
+
+    float result = (float)(y1 - y2) / (float)(x1 - x2);
     //printf("%.2f\n", result);
     return (result > 0) ? result : -result;
 }
